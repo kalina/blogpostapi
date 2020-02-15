@@ -1,13 +1,11 @@
-import logging
 import json
 import os
-import sqlite3
-from flask import Flask, json, jsonify, make_response, request
+from flask import Flask, json, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.exceptions import HTTPException, InternalServerError
 
 PORT = 8080
-DB_FILE = 'blog.db'
+# get the environment from environment variables if they're set
 ENV = os.environ['APP_SETTINGS'] if os.environ.get('APP_SETTINGS', None) else 'config.DevConfig'
 
 app = Flask(__name__)
@@ -17,12 +15,14 @@ db = SQLAlchemy(app)
 
 
 class Post(db.Model):
+    """Class representation of blog posts stored in the database"""
     __tablename__ = 'posts'
     post_id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String())
     body = db.Column(db.String())
 
     def to_dict(self):
+        """Returns the Post object attributes in a dictionary"""
         return {
             'post_id': self.post_id,
             'title': self.title,
@@ -53,8 +53,11 @@ def new_post():
         location = {'Location': request.base_url + 's'}
         return jsonify(location), 201
     except KeyError as ke:
-        return 'Could not process title and body', 400
-
+        return jsonify({
+            'code': 400,
+            'name': 'Bad Request',
+            'description': 'Could not process title and body'
+        }), 400
 
 
 @app.errorhandler(Exception)
