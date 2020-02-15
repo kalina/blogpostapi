@@ -2,8 +2,9 @@ import logging
 import json
 import os
 import sqlite3
-from flask import Flask, jsonify, request
+from flask import Flask, json, jsonify, make_response, request
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.exceptions import HTTPException, InternalServerError
 
 PORT = 8080
 DB_FILE = 'blog.db'
@@ -28,6 +29,7 @@ class Post(db.Model):
             'body': self.body
         }
 
+
 @app.route('/posts', methods=['GET'])
 def get_posts():
     """Returns all blog posts"""
@@ -43,13 +45,34 @@ def get_posts():
 def new_post():
     """Adds a new post to the blog database"""
     content = request.json
+
     try:
-        title = content['title']
-        body = content['body']
-        print(title, body)
-        return '', 201
+        post = Post(title=content['title'], body=content['body'])
+        db.session.add(post)
+        db.session.commit()
+        location = {'Location': request.base_url + 's'}
+        return jsonify(location), 201
     except KeyError as ke:
         return 'Could not process title and body', 400
+
+
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Return JSON instead of HTML for HTTP errors."""
+    if not isinstance(e, HTTPException):
+        return '', 500
+
+    # start with the correct headers and status code from the error
+    response = e.get_response()
+    # replace the body with JSON
+    response.data = json.dumps({
+        "code": e.code,
+        "name": e.name,
+        "description": e.description,
+    })
+    response.content_type = "application/json"
+    return response
 
 
 if __name__ == '__main__':
