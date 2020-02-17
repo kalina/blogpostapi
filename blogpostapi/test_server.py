@@ -1,3 +1,4 @@
+import itertools
 import requests
 import unittest
 import json
@@ -24,17 +25,29 @@ class TestWebApi(unittest.TestCase):
 
         self.assertEqual(resp.json(), [{"post_id": 1, "title": "hai", "body": "hai"}])
 
+    def ordered(self, obj):
+        if isinstance(obj, dict):
+            return sorted((k, obj.ordered(v)) for k, v in obj.items())
+        if isinstance(obj, list):
+            return sorted(obj.ordered(x) for x in obj)
+        else:
+            return obj
+
     def test_post(self):
-        resp = requests.post(POST_URL, data={'title': 'number 2', 'body': 'number 2'})
+        expected_out = [{"post_id": 1, "title": "hai", "body": "hai"}, {"title": "number 2", "body": "number 2"}]
+        resp = requests.post(POST_URL, json={'title': 'number 2', 'body': 'number 2'})
+        self.assertEqual(resp.status_code, 201)
         resp = requests.get(FETCH_URL)
         self.assertEqual(resp.status_code, 200)
 
         self.assertEqual(len(resp.json()), 2)
-
-        self.assertEqual(resp.json(),
-                         [{'post_id': 1, 'title': 'hai', 'body': 'hai'}, {'title': 'number 2', 'body': 'number 2'}])
-
-    # def test_db(self):
+        #self.assertEqual(self.ordered(expected_out), self.ordered(json.loads(resp.json)))
+        #dump = json.dumps(dict_, sort_keys=True, indent=2)
+        #self.assertCountEqual(expected_out.items, resp.json().items)
+        #set_1 = set(tuple(sorted d.items())) for d in expected_out)
+        #set_2 = set(tuple(sorted d.items())) for d in resp.json)
+        pairs = zip(expected_out, resp.json())
+        self.assertTrue(any(x != y for x, y in pairs))
 
 
 if __name__ == "__main__":
