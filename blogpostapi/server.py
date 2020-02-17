@@ -52,7 +52,7 @@ def new_post():
         db.session.commit()
         location = {'Location': request.base_url + 's'}
         return jsonify(location), 201
-    except KeyError as ke:
+    except KeyError as ke: 
         return jsonify({
             'code': 400,
             'name': 'Bad Request',
@@ -79,4 +79,4 @@ def handle_exception(e):
 
 
 if __name__ == '__main__':
-    app.run(port=PORT)
+    app.run(port=PORT, host='0.0.0.0')
